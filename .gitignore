@@ -1,0 +1,22 @@
+# 参考用的开源仓库只在本地阅读，不上传；仅保留 repos/README.md
+repos/*
+!repos/README.md
+
+# Java / Maven 构建产物
+target/
+*.class
+*.jar
+*.war
+*.log
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# 系统文件
+.DS_Store
+Thumbs.db
