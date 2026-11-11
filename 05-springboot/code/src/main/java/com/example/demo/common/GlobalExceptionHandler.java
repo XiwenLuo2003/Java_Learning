@@ -6,6 +6,7 @@ import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -72,6 +73,13 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
     public Result<Void> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
         return Result.fail(405, "不支持 " + e.getMethod() + " 请求");
+    }
+
+    /** Content-Type 不支持：没有任何 HttpMessageConverter 能把这种格式的请求体转成参数类型 */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+    public Result<Void> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException e) {
+        return Result.fail(415, "不支持的 Content-Type: " + e.getContentType());
     }
 
     /** 访问不存在的路径；不单独处理的话会被下面的兜底当成 500 */

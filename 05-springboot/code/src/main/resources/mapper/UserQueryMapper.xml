@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace 必须是 Mapper 接口的全限定名，下面每个 id 对应接口里的一个方法 -->
+<mapper namespace="com.example.demo.mybatis.UserQueryMapper">
+
+    <!-- 可复用的 SQL 片段，用 <include refid="..."/> 引用 -->
+    <sql id="userColumns">id, username, password, nickname, age, create_time</sql>
+
+    <!-- ==================== 动态 SQL ==================== -->
+
+    <!--
+        <where>：里面有条件时自动加 WHERE，并去掉第一个条件开头多余的 AND / OR；一个条件都没有就不加 WHERE
+        <if>：test 里是 OGNL 表达式，读取参数对象的属性
+        <choose>/<when>/<otherwise>：相当于 switch。ORDER BY 后面的列名不能用 #{} 占位，
+        这里用 choose 做白名单，只允许固定的几种写法，而不是把前端传来的字符串直接拼进去
+    -->
+    <select id="search" resultType="com.example.demo.user.User">
+        SELECT <include refid="userColumns"/>
+        FROM t_user
+        <where>
+            <if test="username != null and username != ''">
+                AND username LIKE CONCAT('%', #{username}, '%')
+            </if>
+            <if test="minAge != null">
+                AND age &gt;= #{minAge}
+            </if>
+            <if test="maxAge != null">
+                AND age &lt;= #{maxAge}
+            </if>
+        </where>
+        <choose>
+            <when test="orderBy == 'age'">ORDER BY age DESC, id</when>
+            <otherwise>ORDER BY id</otherwise>
+        </choose>
+    </select>
+
+    <!-- <foreach>：遍历集合，生成 (?, ?, ?)。集合为空会生成 IN ()，是非法 SQL，调用前要判空 -->
+    <select id="selectByIds" resultType="com.example.demo.user.User">
+        SELECT <include refid="userColumns"/>
+        FROM t_user
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY id
+    </select>
+
+    <!-- ==================== #{} 和 ${} ==================== -->
+
+    <!-- #{}：生成 username = ?，参数通过 PreparedStatement 单独传给数据库，永远只会被当成一个值 -->
+    <select id="findByNameSafe" resultType="com.example.demo.user.User">
+        SELECT <include refid="userColumns"/> FROM t_user WHERE username = #{name}
+    </select>
+
+    <!-- ${}：直接把字符串拼进 SQL。传入 ' OR '1'='1 后变成 username = '' OR '1'='1'，查出全表 -->
+    <select id="findByNameUnsafe" resultType="com.example.demo.user.User">
+        SELECT <include refid="userColumns"/> FROM t_user WHERE username = '${name}'
+    </select>
+
+    <!-- ==================== 一对多映射 ==================== -->
+
+    <!--
+        resultMap：当列名和属性名对不上、或者要组装嵌套对象时使用
+        <id> 标记主键列，MyBatis 靠它判断多行结果是不是同一个用户，从而把订单合并进同一个 orders 列表
+        <collection>：一对多（一对一用 <association>）
+    -->
+    <resultMap id="userWithOrdersJoinMap" type="com.example.demo.mybatis.dto.UserWithOrders">
+        <id property="id" column="user_id"/>
+        <result property="username" column="username"/>
+        <result property="nickname" column="nickname"/>
+        <collection property="orders" ofType="com.example.demo.mybatis.dto.OrderItem">
+            <id property="id" column="order_id"/>
+            <result property="product" column="product"/>
+            <result property="amount" column="amount"/>
+            <result property="status" column="status"/>
+        </collection>
+    </resultMap>
+
+    <!-- 两张表都有 id，用别名 user_id / order_id 区分，否则会互相覆盖 -->
+    <select id="selectWithOrders" resultMap="userWithOrdersJoinMap">
+        SELECT u.id AS user_id, u.username, u.nickname,
+               o.id AS order_id, o.product, o.amount, o.status
+        FROM t_user u
+        LEFT JOIN t_order o ON o.user_id = u.id
+        WHERE u.id = #{id}
+        ORDER BY o.id
+    </select>
+
+    <select id="selectAllWithOrdersJoin" resultMap="userWithOrdersJoinMap">
+        SELECT u.id AS user_id, u.username, u.nickname,
+               o.id AS order_id, o.product, o.amount, o.status
+        FROM t_user u
+        LEFT JOIN t_order o ON o.user_id = u.id
+        ORDER BY u.id, o.id
+    </select>
+
+    <!--
+        嵌套查询写法：<collection> 的 select 指向另一条 SQL，column 是传给它的参数。
+        查出 N 个用户后，MyBatis 会为每个用户再执行一次 selectOrdersByUserId —— 一共 1 + N 条 SQL，这就是 N+1 问题
+    -->
+    <resultMap id="userWithOrdersNestedMap" type="com.example.demo.mybatis.dto.UserWithOrders">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="nickname" column="nickname"/>
+        <collection property="orders" ofType="com.example.demo.mybatis.dto.OrderItem"
+                    column="id" select="selectOrdersByUserId"/>
+    </resultMap>
+
+    <select id="selectAllWithOrdersNPlusOne" resultMap="userWithOrdersNestedMap">
+        SELECT id, username, nickname FROM t_user ORDER BY id
+    </select>
+
+    <select id="selectOrdersByUserId" resultType="com.example.demo.mybatis.dto.OrderItem">
+        SELECT id, product, amount, status FROM t_order WHERE user_id = #{userId} ORDER BY id
+    </select>
+
+</mapper>

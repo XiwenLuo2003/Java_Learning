@@ -8,6 +8,17 @@ CREATE TABLE t_user (
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+DROP TABLE IF EXISTS t_order;
+CREATE TABLE t_order (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id     BIGINT         NOT NULL,
+    product     VARCHAR(100)   NOT NULL,
+    amount      DECIMAL(10, 2) NOT NULL,
+    status      VARCHAR(20)    NOT NULL,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_order_user_id ON t_order (user_id);
+
 DROP TABLE IF EXISTS t_tx_log;
 CREATE TABLE t_tx_log (
     id      BIGINT AUTO_INCREMENT PRIMARY KEY,

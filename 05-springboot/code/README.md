@@ -29,6 +29,8 @@
 | 9 | 全局异常处理、参数校验 | `common/*`、`user/dto/*` | `requests.http` 2.4、2.5、2.9、2.10 |
 | 10 | @Transactional 与失效场景 | `tx/*` | 浏览器访问 `/demo/tx/{场景}`，对比 expectedRows 和 actualRows |
 | 11 | 综合：用户 CRUD + 分页 + JWT 登录 | `user/*`、`config/MybatisPlusConfig` | `requests.http` 第 2 组 |
+| 12 | Spring MVC：请求处理流程、参数绑定、消息转换、自定义参数解析器 | `mvc/*`、`web/WebConfig#addArgumentResolvers` | `requests.http` 第 5 组；`GET /demo/mvc/components` |
+| 13 | MyBatis：XML 映射、动态 SQL、#{} 与 ${}、resultMap 一对多、N+1、一级缓存、插件 | `mybatis/*`、`resources/mapper/UserQueryMapper.xml` | `requests.http` 第 6 组，每个响应都带本次执行的 `sqls` |
 
 ## 目录结构
 
@@ -44,8 +46,15 @@ src/main/java/com/example/
 │   ├── user/                     用户管理（Controller → Service → Mapper）
 │   ├── tx/                       事务失效场景
 │   ├── showcase/                 原理观察接口（/demo/beans、/demo/greeting）
+│   ├── mvc/                      @CurrentUser 参数解析器、参数绑定演示
+│   ├── mybatis/                  手写 XML 的 Mapper、SQL 统计插件、一级缓存演示
 │   └── config/                   MyBatis-Plus 分页插件
 └── starter/                      模拟第三方 starter，故意放在启动类扫描范围之外
+
+src/main/resources/
+├── application.yml
+├── schema.sql / data.sql         t_user、t_order、t_tx_log 建表和初始数据
+└── mapper/UserQueryMapper.xml    第 13 课的 SQL
 ```
 
 ## 动手实验
@@ -58,6 +67,11 @@ src/main/java/com/example/
 4. `LogAspect`：把 catch 里的 `throw e` 改成 `return null`（吞异常），再用重复用户名调用新增用户接口：接口返回“成功”但 data 是 null，真正的错误被掩盖了。
 5. `GreetingAutoConfiguration`：在 `config` 包里自己 `@Bean` 一个 `GreetingService("Hi")`，看自动配置是否让位。
 6. `application.yml` 加 `debug: true`，启动后搜索 `GreetingAutoConfiguration`，看条件评估报告。
+7. `WebConfig`：注释掉 `addArgumentResolvers`，再调 `/api/auth/me`：`@CurrentUser Long userId` 没人认领，会被当成普通查询参数 `userId`，取到 null，接口查不到用户。
+8. `UserQueryMapper.xml`：把 `<select id="findByNameSafe">` 整段复制一份，启动时报 `Mapped Statements collection already contains value for ...findByNameSafe` —— SQL 的 key 只有“namespace.id”，不含参数类型，这也是 Mapper 方法不能重载的原因。
+9. `UserQueryMapper.xml`：把 `<where>` 换成 `WHERE`，访问 `/demo/mybatis/search?minAge=25`，生成 `WHERE AND age >= ?`，SQL 报错。
+10. `UserQueryMapper.xml`：删掉 `userWithOrdersJoinMap` 里的 `<id property="id" column="user_id"/>`，访问 `/demo/mybatis/one-to-many/1`：订单仍然合并在一起（没有 `<id>` 时 MyBatis 用其余所有列判断是不是同一行），但返回的 `id` 变成 null —— 带嵌套映射的 resultMap 默认不自动映射没写出来的列。
+11. `application.yml`：把 `demo.mybatis.slow-sql-ms` 改成 `0`，所有 SQL 都会以 `[慢 SQL]` 级别打印。
 
 ## 换成 MySQL
 

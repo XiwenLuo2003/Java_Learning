@@ -1,11 +1,15 @@
 package com.example.demo.web;
 
+import com.example.demo.mvc.CurrentUserArgumentResolver;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.util.List;
 
 /**
  * 注册 Filter 和拦截器。
@@ -31,6 +35,15 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(loginInterceptor)
                 .addPathPatterns("/api/**")
                 .excludePathPatterns("/api/auth/login");
+    }
+
+    /**
+     * 自定义参数解析器排在内置的注解类、类型类解析器之后，排在兜底解析器之前
+     * （兜底的会把简单类型当成 @RequestParam、把对象当成 @ModelAttribute）。
+     */
+    @Override
+    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+        resolvers.add(new CurrentUserArgumentResolver());
     }
 
     @Bean

@@ -121,3 +121,74 @@ GET http://localhost:8080/demo/tx/requires-new
 
 ### 4.9 rollback-only，预期 0，并且 exception 是 UnexpectedRollbackException
 GET http://localhost:8080/demo/tx/rollback-only
+
+### ================= 5. Spring MVC =================
+
+### 5.1 @PathVariable / @RequestParam（含 List）/ @RequestHeader
+GET http://localhost:8080/demo/mvc/params/42?name=张三&tags=java&tags=spring
+
+### 5.2 缺少必填的 name -> 400（MissingServletRequestParameterException，全局异常处理）
+GET http://localhost:8080/demo/mvc/params/42
+
+### 5.3 id 不是数字 -> 400（MethodArgumentTypeMismatchException）
+GET http://localhost:8080/demo/mvc/params/abc?name=x
+
+### 5.4 对象参数：查询参数按字段名绑定
+GET http://localhost:8080/demo/mvc/query?username=zhang&minAge=20&orderBy=age
+
+### 5.5 @RequestBody：JSON -> 对象
+POST http://localhost:8080/demo/mvc/body
+Content-Type: application/json
+
+{"name": "张三", "age": 20, "tags": ["java", "spring"]}
+
+### 5.6 @RequestBody 但 Content-Type 不是 JSON -> 415（没有能读 text/plain 转成 DemoBody 的消息转换器）
+POST http://localhost:8080/demo/mvc/body
+Content-Type: text/plain
+
+name=张三
+
+### 5.7 JSON 格式错误 -> 400（HttpMessageNotReadableException）
+POST http://localhost:8080/demo/mvc/body
+Content-Type: application/json
+
+{"name": "张三", "age": }
+
+### 5.8 ResponseEntity：状态码 201 + 自定义响应头
+POST http://localhost:8080/demo/mvc/created
+
+### 5.9 DispatcherServlet 的组件：HandlerMapping、消息转换器、参数解析器
+GET http://localhost:8080/demo/mvc/components
+
+### 5.10 自定义参数解析器 @CurrentUser：先执行 1.2 登录
+GET http://localhost:8080/api/auth/me
+Authorization: Bearer {{token}}
+
+### ================= 6. MyBatis =================
+
+### 6.1 动态 SQL：不传条件，看 sqls 里没有 WHERE
+GET http://localhost:8080/demo/mybatis/search
+
+### 6.2 动态 SQL：传了 minAge 和 orderBy，WHERE 和 ORDER BY 都变了
+GET http://localhost:8080/demo/mybatis/search?minAge=25&orderBy=age
+
+### 6.3 动态 SQL：orderBy 传非法值，choose 走 otherwise，不会拼进 SQL
+GET http://localhost:8080/demo/mybatis/search?orderBy=id;DROP%20TABLE%20t_user
+
+### 6.4 foreach：IN (?, ?, ?)
+GET http://localhost:8080/demo/mybatis/by-ids?ids=1,3,5
+
+### 6.5 #{} 和 ${}：正常参数，结果一样
+GET http://localhost:8080/demo/mybatis/injection?name=admin
+
+### 6.6 SQL 注入：${} 查出全表，#{} 查不到
+GET http://localhost:8080/demo/mybatis/injection?name=%27%20OR%20%271%27%3D%271
+
+### 6.7 一对多：JOIN + resultMap collection
+GET http://localhost:8080/demo/mybatis/one-to-many/1
+
+### 6.8 N+1：nestedSelect 的 sqlCount = 6，join 的 sqlCount = 1
+GET http://localhost:8080/demo/mybatis/n-plus-one
+
+### 6.9 一级缓存：无事务 2 条 SQL、不同对象；事务内 1 条、同一对象；中间有 update 则 3 条
+GET http://localhost:8080/demo/mybatis/cache
