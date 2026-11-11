@@ -1,0 +1,23 @@
+server:
+  port: 8081
+
+spring:
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password:
+      database: 0
+      # 必须大于 Stream 阻塞读的 2 秒，否则 XREADGROUP BLOCK 会被客户端判超时
+      timeout: 5s
+  datasource:
+    url: jdbc:h2:mem:redisdemo;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+
+logging:
+  level:
+    com.example.redis: info

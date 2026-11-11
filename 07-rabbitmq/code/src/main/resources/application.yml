@@ -1,0 +1,28 @@
+server:
+  port: 8082
+
+spring:
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: guest
+    password: guest
+    # correlated：每条消息带 CorrelationData，能对上是哪一条被 broker 确认
+    publisher-confirm-type: correlated
+    # mandatory：路由不到队列时，消息退回给生产者（ReturnCallback），而不是静默丢弃
+    publisher-returns: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        prefetch: 10
+  datasource:
+    url: jdbc:h2:mem:mqdemo;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+
+logging:
+  level:
+    com.example.mq: info

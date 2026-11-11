@@ -47,9 +47,9 @@
 | [03-jvm](./03-jvm/) | 内存区域、GC、OOM 排查 | 自写 OOM / GC Demo + 排查命令 |
 | [04-mysql](./04-mysql/) | SQL 练习、索引与 EXPLAIN、MVCC、锁、日志与主从、慢 SQL | 自建练习库（MySQL 8.0）+ hm-dianping 的 `hmdp.sql` 反例 |
 | [05-springboot](./05-springboot/) | IoC、AOP、生命周期、自动配置、JWT 鉴权、事务、Spring MVC、MyBatis | 自建 Spring Boot 项目，对照 mall、hm-dianping |
-| [06-redis](./06-redis/) | 数据结构、缓存问题、分布式锁、Lua、Stream、限流 | hm-dianping + 自己扩展 ZSet 滑动窗口限流 |
-| [07-rabbitmq](./07-rabbitmq/) | 可靠投递、幂等、死信队列 | mall 订单超时取消 + 自己补写 Outbox 表和幂等示例 |
-| [08-network-docker](./08-network-docker/) | TCP、HTTPS、Docker 隔离、Linux 排查 | mall 的 Docker 部署文档 |
+| [06-redis](./06-redis/) | SDS/跳表、ZSet 限流与字段过期、穿透击穿雪崩、双写一致性、分布式锁、秒杀 Stream | 自建 Spring Boot Demo + 对照 hm-dianping（含修 bug） |
+| [07-rabbitmq](./07-rabbitmq/) | 交换机、死信延迟队列、Confirm + Outbox、手动 ACK、消费幂等 | mall 订单超时取消 + 自建 Demo（补上 mall 没做的可靠性） |
+| [08-network-docker](./08-network-docker/) | TCP、HTTP 状态码、TLS、Namespace/Cgroups、磁盘和 CPU 排查 | JDK 可运行 Demo + mall 的 docker-compose |
 
 ## 目录组织
 

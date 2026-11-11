@@ -1,0 +1,76 @@
+### RabbitMQ Demo（先启动本机 RabbitMQ，再运行 MqDemoApplication）
+### 端口 8082。管理台 http://127.0.0.1:15672  guest/guest
+
+############################################################
+### 第 1 组：交换机
+############################################################
+
+### 1.1 direct：routingKey=order 能收到
+GET http://localhost:8082/mq/route?type=direct&routingKey=order
+
+### 1.2 direct：routingKey 对不上，队列是空的
+GET http://localhost:8082/mq/route?type=direct&routingKey=other
+
+### 1.3 fanout：两个队列都收到，routingKey 被忽略
+GET http://localhost:8082/mq/route?type=fanout&routingKey=ignored
+
+### 1.4 topic：order.pay 同时匹配 order.# 和 *.pay
+GET http://localhost:8082/mq/route?type=topic&routingKey=order.pay
+
+### 1.5 topic：order.create 只匹配 order.#
+GET http://localhost:8082/mq/route?type=topic&routingKey=order.create
+
+############################################################
+### 第 2 组：延迟队列（mall 的订单超时取消）
+############################################################
+
+### 2.1 2 秒后到达。arrivedAfterMs 大约 2000
+GET http://localhost:8082/mq/delay?ttlMs=2000
+
+### 2.2 队头阻塞：5 秒的消息堵住 0.5 秒的消息。这个请求大约要 5 秒
+GET http://localhost:8082/mq/delay/head-block
+
+############################################################
+### 第 3 组：Publisher Confirm
+############################################################
+
+### 3.1 正常：ack=true，returned=null
+GET http://localhost:8082/mq/confirm?mode=ok
+
+### 3.2 交换机不存在：ack=false
+GET http://localhost:8082/mq/confirm?mode=no-exchange
+
+### 3.3 路由不到队列：ack=true，但 returned 有原因（NO_ROUTE）
+GET http://localhost:8082/mq/confirm?mode=unroutable
+
+############################################################
+### 第 4 组：Outbox + 手动 ACK + 幂等
+############################################################
+
+### 4.1 关掉发布器，下单，再看 outbox：status 停在 0（消息还在本地表）
+GET http://localhost:8082/mq/order/publisher?enabled=false
+
+### 4.2 下单（事务里只有订单和 outbox，没有发消息）
+GET http://localhost:8082/mq/order?userId=1
+
+### 4.3 outbox status=0，coupon_granted=0
+GET http://localhost:8082/mq/order/outbox
+
+### 4.4 打开发布器
+GET http://localhost:8082/mq/order/publisher?enabled=true
+
+### 4.5 等 1 秒再看：outbox status=1，coupon_granted=1
+GET http://localhost:8082/mq/order/outbox
+
+### 4.6 把 outboxId 改成 4.2 返回的值。重复投递，duplicates 增加，consumeLogRows 仍是 1
+GET http://localhost:8082/mq/order/replay?outboxId=1
+
+############################################################
+### 第 5 组：ACK 和死信
+############################################################
+
+### 5.1 失败一次后重新入队，第二次 ack。看 redelivered
+GET http://localhost:8082/mq/ack?mode=requeue
+
+### 5.2 失败后不入队，消息进死信队列
+GET http://localhost:8082/mq/ack?mode=dlq
